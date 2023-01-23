@@ -1,7 +1,6 @@
 const {bot} = require('../../connections/token.connection');
 const {getUser} = require('../../common/sequelize/saveUser.sequelize');
 const {getPreviousDate, getNextDate} = require('../../common/support/functions.support');
-const {pre} = require("telegraf/format");
 
 module.exports = bot.hears(['📖 Расписание', 'Расписание', 'расписание'], async (ctx) => {
     try {
@@ -49,10 +48,40 @@ module.exports = bot.hears(['📖 Расписание', 'Расписание',
         timetable = json.filter(el => el['Группа'] === group);
 
         text = `Расписание группы <b>${group}</b> на <b>${scheduleDay}</b>:\n\n`;
+        
+        // Вспомогательная функция аналог функции array_values из PHP
+        function array_values( input ) {	// Return all the values of an array
+            let tmp_arr = [], cnt = 0;
 
-        timetable.forEach((el) => {
-            text += `Номер пары: <b>${el['НомерПары']}</b>\nДисциплина: <b>${el['Дисциплина']}</b>\nПреподаватель: <b>${el['Преподаватель']}</b>\nАудитория: <b>${el['Аудитория']}</b>\n\n`;
-        });
+            for (let key in input ){
+                tmp_arr[cnt] = input[key];
+                cnt++;
+            }
+            return tmp_arr;
+        }
+
+
+        let isSearch = null;
+        for (let i = 0; i < 12; i++) {
+            isSearch = array_values(timetable.filter((element) => {
+                return element['НомерПары'] === i;
+            }));
+            //console.log(isSearch)
+            if (isSearch) {
+                if (isSearch.length === 0) {
+                    continue;
+                }
+                if (isSearch.length === 1) {
+                    text += `Номер пары: <b>${isSearch[0]['НомерПары']}</b>\nДисциплина: <b>${isSearch[0]['Дисциплина']}</b>\nПреподаватель: <b>${isSearch[0]['Преподаватель']}</b>\nАудитория: <b>${isSearch[0]['Аудитория']}</b>\n\n`;
+                } else {
+                    text += `Номер пары: <b>${isSearch[0]['НомерПары']}</b>\nДисциплина: <b>${isSearch[0]['Дисциплина']}</b>\nПреподаватель: <b>${isSearch[0]['Преподаватель']} / ${isSearch[1]['Преподаватель']}</b>\nАудитория: <b>${isSearch[0]['Аудитория']} / ${isSearch[1]['Аудитория']}</b>\n\n`;
+                }
+            }
+        }
+        // Старый вариант формирования строки вывода расписания
+        // timetable.forEach((el) => {
+        //     text += `Номер пары: <b>${el['НомерПары']}</b>\nДисциплина: <b>${el['Дисциплина']}</b>\nПреподаватель: <b>${el['Преподаватель']}</b>\nАудитория: <b>${el['Аудитория']}</b>\n\n`;
+        // });
         return await ctx.replyWithHTML(text);
     } catch (e) {
         console.log(e);
